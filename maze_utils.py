@@ -2,6 +2,8 @@ import numpy as np
 from mazeN_class import *
 from tkinter import *
 import matplotlib.pyplot as plt
+from PIL import ImageTk
+import PIL.Image
 from customtkinter import CTk, CTkFrame, CTkLabel, CTkButton, CTkSlider, CTkComboBox, CTkCanvas, CTkRadioButton, CTkScrollableFrame, CTkCheckBox, CTkEntry
 import customtkinter as ctk
 
@@ -55,12 +57,6 @@ def visualize_policy(canvas, policy, maze, solution_path):
     right_arrow = '\u2192' 
     star_symbol = '\u2605'
     
-    # root = Tk()
-    # root.title('Policy')
-    # root.geometry("800x600")
-    # canvas_side = n * CELL_SIZE
-    # canvas = Canvas(root, width = canvas_side, height = canvas_side)
-    
     for i in range(n):
         for j in range(n):
             if maze[i][j] == 0:
@@ -92,22 +88,16 @@ def visualize_policy(canvas, policy, maze, solution_path):
             
             in_path = False
             if (i,j) in solution_path:
-                canvas.create_text(x, y, text=arrow_symbol, font=('Arial', 20), fill = '#0F6CAF')
+                canvas.create_text(x, y, text=arrow_symbol, font=('Arial', 20), fill = 'red')
             else:
-                canvas.create_text(x, y, text=arrow_symbol, font=('Arial', 20))
+                canvas.create_text(x, y, text=arrow_symbol, font=('Arial', 20), fill = '#0F6CAF')
             
     canvas.pack()
-    # root.mainloop()
     
 
 def visualize_values(canvas, values, maze):
     n = len(maze[0])
     CELL_SIZE= 700 // n
-    
-    # root = Tk()
-    # root.title('Value function')
-    # canvas_side = n * CELL_SIZE
-    # canvas = Canvas(root, width = canvas_side, height = canvas_side, bg = 'grey')
     
     for i in range(n):
         for j in range(n):
@@ -125,11 +115,9 @@ def visualize_values(canvas, values, maze):
             x = j * CELL_SIZE + CELL_SIZE // 2
             y = i * CELL_SIZE + CELL_SIZE // 2
             font_size = min(CELL_SIZE // 2, 14)
-            canvas.create_text(x, y, text="{:.3f}".format(values[i][j]), font=('Arial', font_size))
-            # canvas.create_text(x, y, text="{:.3f}".format(values[i][j]), font=('Arial', 14))
+            canvas.create_text(x, y, text="{:.2f}".format(values[i][j]), font=('Arial', font_size))
             
     canvas.pack()
-    # root.mainloop()
             
 
 def solution_path(policy, start, goal):
@@ -155,3 +143,17 @@ def solution_path(policy, start, goal):
         path.append((current_row, current_col))
     print(path)
     return path
+
+def find_arrow_image(policy, state, CELL_SIZE):
+    current_row = state[0]
+    current_col = state[1]
+    if policy[current_row][current_col] == 'U':
+        return ImageTk.PhotoImage(PIL.Image.open("assets/arrow_up.png").resize((CELL_SIZE, CELL_SIZE)))
+    elif policy[current_row][current_col] == 'D':
+        return ImageTk.PhotoImage(PIL.Image.open("assets/arrow_down.png").resize((CELL_SIZE, CELL_SIZE)))
+    elif policy[current_row][current_col] == 'R':
+        return ImageTk.PhotoImage(PIL.Image.open("assets/arrow_right.png").resize((CELL_SIZE, CELL_SIZE)))
+    elif policy[current_row][current_col] == 'L':
+        return ImageTk.PhotoImage(PIL.Image.open("assets/arrow_left.png").resize((CELL_SIZE, CELL_SIZE)))
+    elif policy[current_row][current_col] == 'S':
+        return ImageTk.PhotoImage(PIL.Image.open("assets/firework.png").resize((CELL_SIZE, CELL_SIZE)))

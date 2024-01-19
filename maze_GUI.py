@@ -6,7 +6,7 @@ from customtkinter import CTk, CTkFrame, CTkLabel, CTkButton, CTkSlider, CTkComb
 import customtkinter as ctk
 from PIL import ImageTk
 import PIL.Image
-import timeit
+import timeit, time
 from algorithms import *
 from mazeN_class import *
 from maze_utils import *
@@ -23,10 +23,11 @@ class MazeGameGUI:
         self.maze = None
         self.start = None
         self.goal = None
+        self.value_pov = True
                 
         self.root = CTk()
         self.root.title("Maze Game")
-        self.root.geometry('1400x800')
+        self.root.geometry('1400x700')
         self.root.resizable(False, False)
         background = ImageTk.PhotoImage(PIL.Image.open("assets/purple space2.jpg").resize((2000, 1200)))
         background_label = CTkLabel(self.root, image=background, text="")
@@ -79,7 +80,7 @@ class MazeGameGUI:
         self.technique_label = CTkLabel(self.puzzle_frame, text="Technique", font=("joystix monospace", 12))
         self.technique_label.pack()
         
-        self.technique_combobox = CTkComboBox(self.puzzle_frame, values=["Value Iteraion", "Policy Iteration"], width = 200, font=("joystix monospace", 12), dropdown_font=("joystix monospace", 12),
+        self.technique_combobox = CTkComboBox(self.puzzle_frame, values=["Value Iteration", "Policy Iteration"], width = 200, font=("joystix monospace", 12), dropdown_font=("joystix monospace", 12),
                                                 button_color=("#3A7EBF","#504CD1"), border_color=("#3A7EBF","#504CD1"), justify="center")
         self.technique_combobox.pack()
         
@@ -95,6 +96,14 @@ class MazeGameGUI:
         self.change_input_button = ctk.CTkButton(self.puzzle_frame, text="Input Size", font=("joystix monospace", 12), command=button1_click_event, fg_color=("#3A7EBF","#504CD1"))
         self.change_input_button.pack(pady=10, padx=20)
         
+        self.info_frame = CTkFrame(self.puzzle_frame)
+        self.info_frame.pack(pady=10)
+        
+        self.start_label = CTkLabel(self.info_frame, text="START -> VIOLET", font=("joystix monospace", 12), text_color = "#504CD1")
+        self.start_label.pack(padx = 3)
+        self.goal_label = CTkLabel(self.info_frame, text="GOAL -> GOLD", font=("joystix monospace", 12), text_color = "#FFCE00")
+        self.goal_label.pack()
+        
         button_frame = CTkFrame(self.puzzle_frame)
         button_frame.pack(pady=10)
         
@@ -104,7 +113,7 @@ class MazeGameGUI:
         self.change_puzzle_button = CTkButton(button_frame, text="Change Maze", font=("joystix monospace", 12), fg_color=("#3A7EBF","#504CD1"), command = self.change_maze)
         self.change_puzzle_button.pack(side='left', padx=10)
         
-        self.change_input_button = ctk.CTkButton(self.puzzle_frame, text="Policy and Value function", font=("joystix monospace", 12), command=self.display_policy_value, fg_color=("#3A7EBF","#504CD1"))
+        self.change_input_button = ctk.CTkButton(self.puzzle_frame, text="Show Policy and Value function", font=("joystix monospace", 12), command=self.display_policy_value, fg_color=("#3A7EBF","#504CD1"))
         self.change_input_button.pack(pady=10, padx=20)
         
         self.analysis_frame = CTkScrollableFrame(self.root, width = 350, height=250)
@@ -124,12 +133,12 @@ class MazeGameGUI:
         self.labels_frame = CTkFrame(self.policy_frame)
         self.labels_frame.pack(pady=(5,5), padx=5)
         
-        self.policy_frame_title = CTkLabel(self.labels_frame, text ="Policy", font=("joystix monospace", 16))
+        self.policy_frame_title = CTkLabel(self.labels_frame, text ="Optimal Policy", font=("joystix monospace", 16))
         self.policy_frame_title.pack(side = 'left', padx=(20,300))
         self.policy_canvas = CTkCanvas(self.policy_frame, width=700, height=700)
         self.policy_canvas.pack(side='left', padx=(40,20), pady=(20,40))
         
-        self.value_frame_title = CTkLabel(self.labels_frame, text ="Value Function", font=("joystix monospace", 16))
+        self.value_frame_title = CTkLabel(self.labels_frame, text ="Optimal Value Function", font=("joystix monospace", 16))
         self.value_frame_title.pack(side = 'right', padx=(300,20))
         self.value_canvas = CTkCanvas(self.policy_frame, width=700, height=700)
         self.value_canvas.pack(side='left', padx=(20,40), pady=(20,40))
@@ -155,6 +164,7 @@ class MazeGameGUI:
     def return_to_puzzle_page(self):
         self.start_frame.pack_forget()
         self.policy_frame.pack_forget()
+        self.puzzle_frame.pack_forget()
         self.puzzle_frame.pack(side='left', pady=10, padx=(40,40))
         self.canvas = CTkCanvas(self.root, width=700, height=700)
         self.canvas.pack(side='left')
@@ -192,7 +202,6 @@ class MazeGameGUI:
         
     def change_puzzle(self):
         self.start_frame.pack_forget()
-        self.analysis_frame.pack_forget()
         self.policy_frame.pack_forget()
         widgets = self.analysis_frame.winfo_children()
         for widget in widgets:
@@ -203,11 +212,8 @@ class MazeGameGUI:
         self.canvas = CTkCanvas(self.root, width=700, height=700)
         self.canvas.pack(side='left', padx=(20,20))
         
-        # self.draw_puzzle(self.initial_state)
-        
     def clear_analysis_frame(self):
         widgets = self.analysis_frame.winfo_children()
-        # Destroy each widget in the frame
         for widget in widgets:
             widget.destroy()
         self.analysis_frame.pack_forget()
@@ -267,7 +273,7 @@ class MazeGameGUI:
             print(self.maze[i])
         print("start: ", self.start)
         print("goal: ", self.goal)
-            
+        
     def change_maze(self):
         self.start_frame.pack_forget()
         self.analysis_frame.pack_forget()
@@ -281,41 +287,9 @@ class MazeGameGUI:
         self.show_puzzle_page()
         
     def solve_maze(self):
-        print(self.maze)
-        if self.maze == None or self.start == None or self.goal == None:
-            print("NO MAZE, START OR GOAL FOUND")
-            analysis_label = CTkLabel(self.analysis_frame, text = "NO MAZE, START OR GOAL FOUND", text_color = 'red', font=("joystix monospace", 12), width = 280)   
-            analysis_label.pack(anchor="w", pady=3)
-            return
         
-        analysis_label = CTkLabel(self.analysis_frame, text = "THE MAZE IS SOLVABLE", text_color = 'red', font=("joystix monospace", 12), width = 280)   
-        analysis_label.pack(anchor="w", pady=3)
-        
-        self.start_time = timeit.default_timer()
-        self.optimal_value_functions, self.optimal_policy = value_iteration(self.maze)
-        self.end_time = timeit.default_timer()
-        
-        time_taken = self.end_time - self.start_time
-        
-        self.path = solution_path(self.optimal_policy, self.start, self.goal)
-        print("path")
-        print(self.path)
-        
-        self.cost = len(self.path)
-        
-        self.analyze_algorithm(self.technique, time_taken, self.cost)
-        
-        print("Optimal Value Function:")
-        print(self.optimal_value_functions)
-        print("\nOptimal Policy:")
-        print(self.optimal_policy)
-        
-    def analyze_algorithm (self, algorithm, time_taken, cost):
-        steps_text = f"--> {algorithm} Time taken:\n {time_taken*1000:.4f} ms\n Cost: {cost}"
-        analysis_label = CTkLabel(self.analysis_frame, text = steps_text, font=("joystix monospace", 12), width = 280)   
-        analysis_label.pack(anchor="w", pady=3)
-        
-    def display_policy_value(self):
+        self.technique = self.technique_combobox.get()
+        print(self.technique)
         
         self.start_frame.pack_forget()
         self.analysis_frame.pack_forget()
@@ -326,12 +300,122 @@ class MazeGameGUI:
         self.canvas.pack_forget()
         self.puzzle_frame.pack_forget()
         
-        # self.draw_maze()
+        n = self.n
+        CELL_SIZE = (700) // n
+        canvas_side = n * CELL_SIZE
+        self.canva = CTkCanvas(self.canvas, width = canvas_side, height = canvas_side, bg = 'grey')
         
+        if self.maze == None or self.start == None or self.goal == None:
+            print("NO MAZE, START OR GOAL FOUND")
+            analysis_label = CTkLabel(self.analysis_frame, text = "NO MAZE, START OR GOAL FOUND", text_color = 'red', font=("joystix monospace", 12), width = 280)   
+            analysis_label.pack(anchor="w", pady=3)
+            return
         
+        analysis_label = CTkLabel(self.analysis_frame, text = "THE MAZE IS SOLVABLE", text_color = 'red', font=("joystix monospace", 12), width = 280)   
+        analysis_label.pack(anchor="w", pady=3)
+        
+        self.optimal_value_functions = None
+        
+        if self.technique == 'Value Iteration':
+            self.value_pov = True
+            self.start_time = timeit.default_timer()
+            self.optimal_value_functions, self.optimal_policy = value_iteration(self.maze)
+            self.end_time = timeit.default_timer()
+        else:
+            self.value_pov = False
+            self.start_time = timeit.default_timer()
+            self.optimal_policy, self.optimal_value_functions, iterations = policy_iteration(self.maze)
+            print("Iterations: ", iterations)
+            self.end_time = timeit.default_timer()
+        
+        time_taken = self.end_time - self.start_time
+        
+        self.path = solution_path(self.optimal_policy, self.start, self.goal)
+        
+        self.cost = len(self.path) - 1
+        
+        self.analyze_algorithm(self.technique, time_taken, self.cost)
+        print(f"-----> {self.technique} time taken: {time_taken} ms, cost = {self.cost} ")
+        self.start_frame.pack_forget()
+        self.policy_frame.pack_forget()
+        self.puzzle_frame.pack(side='left', pady=10, padx=(40,40))
+        self.canvas = CTkCanvas(self.root, width=700, height=700)
+        self.canvas.pack(side='left')
+        
+        self.visualize_solution(self.canvas, self.path)
+        
+        print("Optimal Value Function:")
+        print(self.optimal_value_functions)
+        print("\nOptimal Policy:")
+        print(self.optimal_policy)
+        
+        print(f"-----------------------------END OF {self.technique}-----------------------------")
+        
+    def analyze_algorithm (self, algorithm, time_taken, cost):
+        steps_text = f"--> {algorithm}\n Time taken: {time_taken*1000:.4f} ms\n Cost: {cost}"
+        analysis_label = CTkLabel(self.analysis_frame, text = steps_text, font=("joystix monospace", 12), width = 280)   
+        analysis_label.pack(anchor="w", pady=3, padx = 3)
+        
+    def display_policy_value(self):
+        self.start_frame.pack_forget()
+        self.analysis_frame.pack_forget()
+        widgets = self.analysis_frame.winfo_children()
+        for widget in widgets:
+            widget.destroy()
+        self.clear_puzzle()
+        self.canvas.pack_forget()
+        self.puzzle_frame.pack_forget()
+
+        self.policy_frame.pack_forget()
+        self.policy_frame.pack()
         visualize_policy(self.policy_canvas, self.optimal_policy, self.maze, self.path)  
         visualize_values(self.value_canvas, self.optimal_value_functions, self.maze) 
         self.policy_frame.pack()
+        
+    def visualize_solution(self, canvas, solution_path):
+        maze = self.maze
+        n = self.n
+        CELL_SIZE = 700 // n
+        canvas = Canvas(canvas, width=CELL_SIZE * n, height=CELL_SIZE * n)
+        
+        self.analysis_frame.pack_forget()
+        widgets = self.analysis_frame.winfo_children()
+        for widget in widgets:
+            widget.destroy()
+        self.analysis_frame2 = CTkFrame(self.analysis_frame)
+        self.analysis_frame2.pack()
+        self.analysis_frame.pack(side = 'left', padx=(40,40))
+        self.analysis_frame_title = CTkLabel(self.analysis_frame2, text ="Analysis History", font=("joystix monospace", 16))
+        self.analysis_frame_title.pack(side = 'left', padx=(40,0))
+        
+        self.analysis_frame_clear_button = CTkButton(self.analysis_frame2, text ="Clear", width=50, font=("joystix monospace", 12), fg_color=("#3A7EBF","#504CD1"), command=self.clear_analysis_frame)
+        self.analysis_frame_clear_button.pack(side = 'left', padx=(30,0))
+        analysis_label = CTkLabel(self.analysis_frame, text = "THE MAZE IS SOLVABLE", text_color = 'red', font=("joystix monospace", 12), width = 280)   
+        analysis_label.pack(anchor="w", pady=3)
+        self.analyze_algorithm(self.technique, self.end_time - self.start_time, self.cost)
+        
+        for i in range(n):
+            for j in range(n):
+                if maze[i][j] == 0:
+                    draw_maze2(canvas, i, j, 'black', n)
+                if maze[i][j] == 1:
+                    draw_maze2(canvas, i, j, 'white', n)
+                if maze[i][j] == 2:
+                    draw_maze2(canvas, i, j, '#504CD1', n)
+                elif maze[i][j] == 3:
+                    draw_maze2(canvas, i, j, '#FFCE00', n)
+                    
+        canvas.pack()
+
+        for row, col in solution_path:
+            x = col * CELL_SIZE
+            y = row * CELL_SIZE
+
+            movement_image = find_arrow_image(self.optimal_policy, (row, col), CELL_SIZE)
+            canvas.create_image(x, y, anchor=NW, image=movement_image)
+            canvas.update()  
+            canvas.pack()
+            time.sleep(0.5) # Adjustable to the desired lag animation !! 
         
     def run(self):
         self.root.mainloop()
