@@ -21,7 +21,7 @@ def get_valid_actions(maze, state):
         actions.append('R')
     return actions
 
-def value_iteration(maze, gamma=0.7, epsilon=0.00001, max_k = 600):
+def value_iteration(maze, gamma=0.7, epsilon=0.0000001, max_k = 10000):
     rows = cols = len(maze[0])
     
     start_cell = None
@@ -46,7 +46,7 @@ def value_iteration(maze, gamma=0.7, epsilon=0.00001, max_k = 600):
     for i in range(rows):
         print(V[i])
     
-    k = 1
+    k = 0
     while True:
         delta = 0
         k = k + 1
@@ -54,15 +54,15 @@ def value_iteration(maze, gamma=0.7, epsilon=0.00001, max_k = 600):
             for j in range(cols):
                 if maze[i][j] != 0: 
                     max_v_iter = float('-inf')
-                    for action, (dx, dy) in enumerate([(-1, 0), (1, 0), (0, -1), (0, 1)]):
-                        nx, ny = i + dx, j + dy
-                        if is_valid_move(nx, ny, rows, maze):
+                    for action, (action_x, action_y) in enumerate([(-1, 0), (1, 0), (0, -1), (0, 1)]):
+                        neighbour_x, neighbour_y = i + action_x, j + action_y
+                        if is_valid_move(neighbour_x, neighbour_y, rows, maze):
                             p = 1  
                             if maze[i][j] == 3:
-                                reward = 10    
+                                reward = 100    
                             else:
                                 reward = -1
-                            v_iter = p * (reward + gamma * V[nx][ny])
+                            v_iter = reward + gamma * (p * V[neighbour_x][neighbour_y])
                             max_v_iter = max(max_v_iter, v_iter)
 
                     delta = max(delta, abs(max_v_iter - V[i][j]))
@@ -89,49 +89,52 @@ def value_iteration(maze, gamma=0.7, epsilon=0.00001, max_k = 600):
                     continue
                 max_action = -1
                 max_v_iter = float('-inf')
-                for action, (dx, dy) in enumerate([(-1, 0), (1, 0), (0, -1), (0, 1)]):
-                    nx, ny = i + dx, j + dy
-                    if is_valid_move(nx, ny, rows, maze):
+                for action, (action_x, action_y) in enumerate([(-1, 0), (1, 0), (0, -1), (0, 1)]):
+                    neighbour_x, neighbour_y = i + action_x, j + action_y
+                    if is_valid_move(neighbour_x, neighbour_y, rows, maze):
                         p = 1  
                         if maze[i][j] == 3:
-                            reward = 10
+                            reward = 100
                         else:
                             reward = -1
-                        v_iter = p * (reward + gamma * V[nx][ny])
+                        v_iter = reward + gamma * (p * V[neighbour_x][neighbour_y])
                         if v_iter > max_v_iter:
                             max_v_iter = v_iter
                             max_action = action
                 policy[i][j] = actions[max_action]
             elif maze[i][j] == 0:
                 policy[i][j] = 'X ' # X -> wall
-    
     return V, policy
 
-def policy_evaluation(maze, policy, gamma=0.7, epsilon=0.00001):
+def policy_evaluation(maze, policy, gamma=0.7, epsilon=0.000001):
     V = np.zeros_like(maze, dtype=np.float32)
     while True:
         delta = 0.0
-
         for row in range(len(maze)):
             for col in range(len(maze[0])):
                 reward = -1
                 if maze[row][col] == 0:
                     continue
                 if maze[row][col] == 3:
-                    reward = 10
+                    reward = 100
+                
                 old_value = V[row][col]
                 action = policy[row][col]
+                
                 if action == 'U' and row > 0:
-                    new_value = reward + gamma * V[row-1][col]
+                    x, y = row-1, col
                 elif action == 'D' and row < len(maze)-1:
-                    new_value = reward + gamma * V[row+1][col]
+                    x, y = row+1, col
                 elif action == 'L' and col > 0:
-                    new_value = reward + gamma * V[row][col-1]
+                    x, y = row, col-1
                 elif action == 'R' and col < len(maze[0])-1:
-                    new_value = reward + gamma * V[row][col+1]
+                    x, y = row, col+1
+                    
+                if is_valid_move(x, y, len(maze[0]), maze):
+                    V[row][col] = reward + gamma * V[x][y]
+                    new_value = V[row][col]
                 else:
-                    new_value = 0.0  # 0 for invalid actions
-                V[row][col] = new_value
+                    new_value = old_value
                 delta = max(delta, abs(old_value - new_value))
         if delta < epsilon:
             break
@@ -142,8 +145,7 @@ def policy_improvement(maze, V, gamma=0.7):
     for row in range(len(maze)):
         for col in range(len(maze[0])):
             if maze[row][col] == 3:
-                policy[row][col] = 'S'
-                continue
+                goal_row, goal_col = row, col
             if maze[row][col] == 0:
                 policy[row][col] = 'X'
                 continue
@@ -163,11 +165,13 @@ def policy_improvement(maze, V, gamma=0.7):
                     best_value = value
                     best_action = action
             policy[row][col] = best_action
+    policy[goal_row][goal_col] = 'S'
     return policy
 
 def policy_iteration(maze):
     policy = np.random.choice(actions, size=(len(maze), len(maze[0])))
     i = 0
+    max_iterations = 2000
     while True:
         V = policy_evaluation(maze, policy)
         print("\n \n \n")
@@ -177,6 +181,8 @@ def policy_iteration(maze):
         for j in range(len(maze[0])):
             print(V[j])
         i = i+1
+        if i >= max_iterations:
+            break
         new_policy = policy_improvement(maze, V)
         print("Current policy:")
         print("***********************")

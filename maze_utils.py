@@ -6,6 +6,7 @@ from PIL import ImageTk
 import PIL.Image
 from customtkinter import CTk, CTkFrame, CTkLabel, CTkButton, CTkSlider, CTkComboBox, CTkCanvas, CTkRadioButton, CTkScrollableFrame, CTkCheckBox, CTkEntry
 import customtkinter as ctk
+from collections import deque
 
 def policy_modified(policy):
     n = len(policy[0])
@@ -122,26 +123,32 @@ def visualize_values(canvas, values, maze):
 
 def solution_path(policy, start, goal):
     n = len(policy[0])
-    
-    current_row = start[0]
-    current_col = start[1]
-    print(current_row, current_col)
-    path = []
-    path.append((current_row, current_col))
+
+    current_row, current_col = start
+    path = [(current_row, current_col)]
     
     while True:
+        prev_row, prev_col = current_row, current_col
         if policy[current_row][current_col] == 'U':
-            current_row = current_row - 1
+            current_row -= 1
         elif policy[current_row][current_col] == 'D':
-            current_row = current_row + 1
+            current_row += 1
         elif policy[current_row][current_col] == 'R':
-            current_col = current_col + 1
+            current_col += 1
         elif policy[current_row][current_col] == 'L':
-            current_col = current_col - 1
+            current_col -= 1
         elif policy[current_row][current_col] == 'S':
             break
+
+        if prev_row == current_col and prev_col == current_row:
+            return None
+        
         path.append((current_row, current_col))
-    print(path)
+        # print("current path: ", path)
+        # print("policy:", policy)
+        
+    # print("total path: ", path)
+
     return path
 
 def find_arrow_image(policy, state, CELL_SIZE):

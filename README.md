@@ -50,3 +50,5 @@ The available algorithms for finding the optimal path are:
 -   Policy Iteration
 
 You can select the algorithm from the GUI before starting the game.
+
+Please not that for very large N, it might cause rendering issues, so the the result will be displayed in the console log for checking.

@@ -12,6 +12,7 @@ from mazeN_class import *
 from maze_utils import *
 import threading
 
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -243,6 +244,11 @@ class MazeGameGUI:
         
     def draw_defined_maze(self):
         n = self.n
+        if n > 90:
+            print("N size is too large ! Choose a smaller N")
+            analysis_label = CTkLabel(self.analysis_frame, text = "N size is too large for rendering !\n\n Please Choose a smaller N", text_color = 'red', font=("joystix monospace", 12), width = 280)   
+            analysis_label.pack(anchor="w", pady=3)
+            return
         maze = self.maze
         canvas = self.canvas
         for i in range(n):
@@ -258,6 +264,11 @@ class MazeGameGUI:
         
     def draw_random_maze(self):
         n = self.n
+        if n > 90:
+            print("N size is too large ! Choose a smaller N")
+            analysis_label = CTkLabel(self.analysis_frame, text = "N size is too large for rendering !\n\n Please Choose a smaller N", text_color = 'red', font=("joystix monospace", 12), width = 280)   
+            analysis_label.pack(anchor="w", pady=3)
+            return
         CELL_SIZE = (700) // n
         canvas_side = n * CELL_SIZE
         self.canva = CTkCanvas(self.canvas, width = canvas_side, height = canvas_side, bg = 'grey')
@@ -275,6 +286,7 @@ class MazeGameGUI:
         print("goal: ", self.goal)
         
     def change_maze(self):
+        self.root.update_idletasks()
         self.start_frame.pack_forget()
         self.analysis_frame.pack_forget()
         widgets = self.analysis_frame.winfo_children()
@@ -329,13 +341,26 @@ class MazeGameGUI:
             self.end_time = timeit.default_timer()
         
         time_taken = self.end_time - self.start_time
+        print(f"-----> {self.technique} time taken: {time_taken*1000:.4f} ms")
+        
+        print("Optimal Value Function:")
+        print("************************")
+        print(self.optimal_value_functions)
+        print("\nOptimal Policy:")
+        print("*****************")
+        print(self.optimal_policy)
         
         self.path = solution_path(self.optimal_policy, self.start, self.goal)
         
+        if self.path == None:
+            self.solve_maze()
+        
         self.cost = len(self.path) - 1
         
+        print(f"-----> {self.technique} cost: {self.cost}")
+        
         self.analyze_algorithm(self.technique, time_taken, self.cost)
-        print(f"-----> {self.technique} time taken: {time_taken} ms, cost = {self.cost} ")
+        
         self.start_frame.pack_forget()
         self.policy_frame.pack_forget()
         self.puzzle_frame.pack(side='left', pady=10, padx=(40,40))
@@ -344,10 +369,7 @@ class MazeGameGUI:
         
         self.visualize_solution(self.canvas, self.path)
         
-        print("Optimal Value Function:")
-        print(self.optimal_value_functions)
-        print("\nOptimal Policy:")
-        print(self.optimal_policy)
+        
         
         print(f"-----------------------------END OF {self.technique}-----------------------------")
         
